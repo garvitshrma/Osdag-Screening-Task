@@ -85,12 +85,18 @@ def files(request):
 
 @api_view(['GET'])
 def file_detail(request, file_id):
-    file = File.objects.filter(id=file_id).first
+    file = File.objects.filter(id=file_id).first()
 
     if file is None:
-        return Response({'File not found'}, status = 404)
+        return Response({'error': 'File not found'}, status = 404)
 
     if file.owner_id != request.user.id:
         return Response({'error': 'You do not have access to this file'}, status=403)
 
-    return Response({'file', serialize_file(file)})
+    return Response({'file': serialize_file(file)})
+
+
+@api_view(['POST'])
+def logout(request):
+    request.user.auth_token.delete()
+    return Response({'message': 'User has been logged out'})
