@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
+from django.http import FileResponse
 from .models import Profile, File
 
 
@@ -100,3 +101,16 @@ def file_detail(request, file_id):
 def logout(request):
     request.user.auth_token.delete()
     return Response({'message': 'User has been logged out'})
+
+@api_view(['GET'])
+def file_download(request, file_id):
+    file = File.objects.filter(id=file_id).first()
+
+    if file is None:
+        return Response({'error': 'File not found'}, status=404)
+
+    if file.owner_id != request.user.id:
+        return Response({'error': 'You do not have access to this file'}, status=403)
+
+    # It's theirs — stream the stored bytes as a download.
+    return FileResponse(file.content.open('rb'), as_attachment=True, filename=file.file_name)
