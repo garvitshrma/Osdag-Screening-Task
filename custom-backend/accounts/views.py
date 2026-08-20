@@ -25,22 +25,12 @@ def serialize_file(f):
 def register(request):
     email = request.data.get('email')
     password = request.data.get('password')
-
-    # Guard 1: client must send both fields. If not, it's a bad request (400).
     if not email or not password:
         return Response({'error': 'email and password are required'}, status=400)
-
-    # Guard 2: is this email already taken? Query the DB, don't check the class.
     if User.objects.filter(username=email).exists():
         return Response({'error': 'An account with that email already exists'}, status=409)
-
-    # Create the user — create_user() hashes the password before saving it.
     user = User.objects.create_user(username=email, email=email, password=password)
-
-    # Give them a profile row (display_name = the bit before the @).
     Profile.objects.create(user=user, display_name=email.split('@')[0])
-
-    # Success: 201 Created, echo back who we made.
     return Response({'id': user.id, 'email': user.email}, status=201)
 
 
@@ -112,5 +102,4 @@ def file_download(request, file_id):
     if file.owner_id != request.user.id:
         return Response({'error': 'You do not have access to this file'}, status=403)
 
-    # It's theirs — stream the stored bytes as a download.
     return FileResponse(file.content.open('rb'), as_attachment=True, filename=file.file_name)
