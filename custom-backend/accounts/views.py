@@ -6,7 +6,12 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.http import FileResponse
 from .models import Profile, File
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.throttling import AnonRateThrottle
 
+
+class LoginRateThrottle(AnonRateThrottle):
+    scope = 'login'   # uses the '5/min' rate from settings, keyed by IP
 
 
 def serialize_file(f):
@@ -36,6 +41,7 @@ def register(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([LoginRateThrottle]) 
 def login(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -103,3 +109,6 @@ def file_download(request, file_id):
         return Response({'error': 'You do not have access to this file'}, status=403)
 
     return FileResponse(file.content.open('rb'), as_attachment=True, filename=file.file_name)
+
+
+
